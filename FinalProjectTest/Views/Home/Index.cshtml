@@ -1,0 +1,114 @@
+﻿@{
+    ViewData["Title"] = "Home";
+    var featured = ViewBag.Featured as List<FinalProjectTest.Models.Location>;
+    var topHotels = ViewBag.TopHotels as List<FinalProjectTest.Models.Location>;
+}
+
+<!-- 🏠 Hero Banner with Search -->
+<div class="p-5 mb-4 bg-light rounded-3 text-center">
+    <div class="container py-5">
+        <h1 class="display-5 fw-bold">Welcome to Guidely</h1>
+        <p class="lead">Explore Cairo’s finest landmarks and top-rated hotels.</p>
+
+        <!-- 🔍 Search Bar -->
+        <form method="get" asp-controller="Locations" asp-action="Index" class="d-flex justify-content-center mt-4">
+            <input name="search" type="text" class="form-control w-50 me-2" placeholder="Search for places, hotels, or keywords..." />
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+</div>
+
+<!-- 🧭 Browse by Category -->
+<div class="container mb-5">
+    <h3 class="mb-3">🧭 Browse by Category</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/Locations?category=Museum" class="btn btn-outline-dark">🏛️ Museums</a>
+        <a href="/Locations?category=Mosque" class="btn btn-outline-dark">🕌 Mosques</a>
+        <a href="/Locations?category=Palace" class="btn btn-outline-dark">🏰 Palaces</a>
+        <a href="/Locations?category=Hotel" class="btn btn-outline-dark">🏨 Hotels</a>
+        <a href="/Locations?category=Fortress" class="btn btn-outline-dark">🛡️ Fortresses</a>
+        <a href="/Locations?category=Market" class="btn btn-outline-dark">🛍️ Markets</a>
+    </div>
+</div>
+
+<!-- ✨ Featured Locations -->
+@if (featured != null && featured.Any())
+{
+    <div class="container mb-5">
+        <h3 class="mb-3">✨ Featured Places</h3>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var item in featured)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img src="@item.ImageURL" class="card-img-top" style="height: 180px; object-fit: cover;" alt="@item.Name" />
+                        <div class="card-body">
+                            <h5 class="card-title">@item.Name</h5>
+                            <p class="card-text text-muted">@item.ShortDescription</p>
+                            <span class="badge bg-secondary">@item.Category</span>
+                        </div>
+                        <div class="card-body">
+                            <a asp-controller="Locations" asp-action="Details" asp-route-id="@item.LocationID" class="btn btn-sm btn-outline-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- 🏨 Top-Rated Hotels -->
+@if (topHotels != null && topHotels.Any())
+{
+    <div class="container mb-5">
+        <h3 class="mb-3">🏨 Top-Rated Hotels</h3>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var hotel in topHotels)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@hotel.Name</h5>
+                            <p class="card-text text-muted">@hotel.Address</p>
+                            <p class="card-text">@hotel.ShortDescription</p>
+                        </div>
+                        <div class="card-body">
+                            <a href="@hotel.DetailURL" class="btn btn-sm btn-outline-primary" target="_blank">Book Now</a>
+                            <a asp-controller="Locations" asp-action="Details" asp-route-id="@hotel.LocationID" class="btn btn-sm btn-outline-secondary">View</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- 📝 Blog Posts (Placeholder) -->
+<div class="container mb-5">
+    <h3 class="mb-3">📝 Recent Blog Posts</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="p-3 bg-light rounded border">
+                <h5>🌆 5 Must-See Historical Spots in Cairo</h5>
+                <p class="text-muted">A quick guide to Cairo’s rich history and where to start your journey.</p>
+                <a href="#" class="btn btn-sm btn-outline-secondary disabled">Coming Soon</a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="p-3 bg-light rounded border">
+                <h5>🛏️ Hotel Booking Tips for First-Time Visitors</h5>
+                <p class="text-muted">What to know before booking your stay in Egypt’s capital.</p>
+                <a href="#" class="btn btn-sm btn-outline-secondary disabled">Coming Soon</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🤖 AI Chatbot Prompt -->
+<div class="container mb-5">
+    <h3 class="mb-3">🤖 Need help planning?</h3>
+    <div class="alert alert-info">
+        Ask our smart assistant: <strong>“Where should I go this evening?”</strong> or <strong>“Show me kid-friendly museums.”</strong><br />
+        <a href="#" class="btn btn-sm btn-primary mt-2 disabled">Ask the AI (Coming Soon)</a>
+    </div>
+</div>
