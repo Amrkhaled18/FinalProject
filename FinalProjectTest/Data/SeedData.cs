@@ -17,6 +17,9 @@ namespace FinalProjectTest.Data
             await ImportHotels(serviceProvider);
             await ImportLocationImages(serviceProvider);
             await SeedAdminUser(serviceProvider);
+            await ImportRestaurants(serviceProvider);
+            await ImportCafes(serviceProvider);
+
         }
 
         public static async Task ImportLocations(IServiceProvider serviceProvider)
@@ -125,6 +128,163 @@ namespace FinalProjectTest.Data
             await context.Locations.AddRangeAsync(hotels);
             await context.SaveChangesAsync();
             Console.WriteLine($"🏨 {hotels.Count} hotels seeded.");
+        }
+
+        public static async Task ImportRestaurants(IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            if (await context.Locations.AnyAsync(l => l.Category == "Restaurant"))
+            {
+                Console.WriteLine("🍽️ Restaurants already seeded. Skipping.");
+                return;
+            }
+            
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "cairo_restaurants_cleaned.xlsx");
+
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            var config = new ExcelDataSetConfiguration
+            {
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration { UseHeaderRow = true }
+            };
+
+            var dataSet = reader.AsDataSet(config);
+            var table = dataSet.Tables[0];
+            var restaurants = new List<Location>();
+            var images = new List<LocationImage>();
+
+            foreach (DataRow row in table.Rows)
+            {
+                var name = row["name"]?.ToString();
+                var address = row["address"]?.ToString();
+                var desc = row["description"]?.ToString();
+                var rating = row["rating"]?.ToString();
+                var price = row["priceLevel"]?.ToString();
+                var hours = row["opening_hours_text"]?.ToString();
+                var lat = row["latitude"] != DBNull.Value ? Convert.ToDouble(row["latitude"]) : 0;
+                var lng = row["longitude"] != DBNull.Value ? Convert.ToDouble(row["longitude"]) : 0;
+                var website = row["website"]?.ToString();
+
+                var fullDescription = $"Rating: {rating} | Price: {price}\nHours: {hours}\n\n{desc}";
+
+                var location = new Location
+                {
+                    Name = name,
+                    Address = address,
+                    Category = "Restaurant",
+                    ShortDescription = desc,
+                    FullDescription = fullDescription,
+                    VisitingHours = hours,
+                    DetailURL = website,
+                    GoogleMapsLink = "",
+                    ImageURL = "",
+                    Attributes = rating, // Mapping rating to Attributes column
+                    Latitude = lat,
+                    Longitude = lng
+                };
+
+                context.Locations.Add(location);
+                await context.SaveChangesAsync(); // Save to get the LocationID
+
+                var galleryColumns = new[] { "image", "photos/0", "photos/1", "photos/2", "photos/3", "photos/4", "photos/5", "photos/6", "photos/7", "photos/8", "photos/9", "photos/10", "photos/11", "photos/12", "photos/13", "photos/14", "photos/15", "photos/16", "photos/17", "photos/18", "photos/19", "photos/20", "photos/21", "photos/22", "photos/23" };
+                foreach (var col in galleryColumns)
+                {
+                    if (table.Columns.Contains(col))
+                    {
+                        var imageUrl = row[col]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(imageUrl))
+                        {
+                            images.Add(new LocationImage
+                            {
+                                LocationID = location.LocationID,
+                                ImageURL = imageUrl.Trim()
+                            });
+                        }
+                    }
+                }
+            }
+
+            await context.LocationImages.AddRangeAsync(images);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine($"🍽️ {table.Rows.Count} restaurants and {images.Count} images seeded from Restaurants.xlsx");
+        }
+
+        public static async Task ImportCafes(IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            if (await context.Locations.AnyAsync(l => l.Category == "Cafe"))
+            {
+                Console.WriteLine("Cafes already seeded. Skipping.");
+                return;
+            }
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "cairo_cafes_cleaned.xlsx");
+
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            var config = new ExcelDataSetConfiguration
+            {
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration { UseHeaderRow = true }
+            };
+
+            var dataSet = reader.AsDataSet(config);
+            var table = dataSet.Tables[0];
+            var cafes = new List<Location>();
+            var images = new List<LocationImage>();
+
+            foreach (DataRow row in table.Rows)
+            {
+                var name = row["name"]?.ToString();
+                var address = row["address"]?.ToString();
+                var desc = row["description"]?.ToString();
+                var rating = row["rating"]?.ToString();
+                var price = row["priceLevel"]?.ToString();
+                var hours = row["opening_hours_text"]?.ToString();
+                var lat = row["latitude"] != DBNull.Value ? Convert.ToDouble(row["latitude"]) : 0;
+                var lng = row["longitude"] != DBNull.Value ? Convert.ToDouble(row["longitude"]) : 0;
+                var website = row["website"]?.ToString();
+                var image = row.Table.Columns.Contains("image") ? row["image"]?.ToString() : null;
+
+                var fullDescription = $"Rating: {rating} | Price: {price}\nHours: {hours}\n\n{desc}";
+
+                var location = new Location
+                {
+                    Name = name,
+                    Address = address,
+                    Category = "Cafe",
+                    ShortDescription = desc,
+                    FullDescription = fullDescription,
+                    VisitingHours = hours,
+                    DetailURL = website,
+                    GoogleMapsLink = "",
+                    ImageURL = "",
+                    Attributes = rating,
+                    Latitude = lat,
+                    Longitude = lng
+                };
+
+                context.Locations.Add(location);
+                await context.SaveChangesAsync();
+
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    images.Add(new LocationImage
+                    {
+                        LocationID = location.LocationID,
+                        ImageURL = image.Trim()
+                    });
+                }
+            }
+
+            await context.LocationImages.AddRangeAsync(images);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine($"☕ {table.Rows.Count} cafes and {images.Count} images seeded from cairo_cafes_cleaned.xlsx");
         }
 
 

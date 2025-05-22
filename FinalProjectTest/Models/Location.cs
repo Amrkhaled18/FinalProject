@@ -1,4 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using System.ComponentModel.DataAnnotations;
 namespace FinalProjectTest.Models
 {
     public class Location
@@ -11,6 +12,8 @@ namespace FinalProjectTest.Models
         [Name("Location")]
         public string Address { get; set; }
         public string Category { get; set; }
+
+        [Display(Name = "Rating")]
         public string Attributes { get; set; }
         public double ProximityScore { get; set; }
         public double? Latitude { get; set; }
