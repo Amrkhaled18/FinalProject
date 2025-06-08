@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinalProjectTest.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250607171458_AddUserInteractions")]
+    partial class AddUserInteractions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,6 +66,9 @@ namespace FinalProjectTest.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("PreferencesID")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -82,6 +88,10 @@ namespace FinalProjectTest.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("PreferencesID")
+                        .IsUnique()
+                        .HasFilter("[PreferencesID] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -264,13 +274,7 @@ namespace FinalProjectTest.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("PreferenceID");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Preferences");
                 });
@@ -301,35 +305,6 @@ namespace FinalProjectTest.Migrations
                     b.HasIndex("UserID");
 
                     b.ToTable("Recommendations");
-                });
-
-            modelBuilder.Entity("FinalProjectTest.Models.UserInteraction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("LocationID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LocationID");
-
-                    b.ToTable("UserInteractions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -469,6 +444,16 @@ namespace FinalProjectTest.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("FinalProjectTest.Models.ApplicationUser", b =>
+                {
+                    b.HasOne("FinalProjectTest.Models.Preference", "Preferences")
+                        .WithOne()
+                        .HasForeignKey("FinalProjectTest.Models.ApplicationUser", "PreferencesID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Preferences");
+                });
+
             modelBuilder.Entity("FinalProjectTest.Models.ChatbotInteraction", b =>
                 {
                     b.HasOne("FinalProjectTest.Models.ApplicationUser", "User")
@@ -529,17 +514,6 @@ namespace FinalProjectTest.Migrations
                     b.Navigation("Location");
                 });
 
-            modelBuilder.Entity("FinalProjectTest.Models.Preference", b =>
-                {
-                    b.HasOne("FinalProjectTest.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("FinalProjectTest.Models.Recommendation", b =>
                 {
                     b.HasOne("FinalProjectTest.Models.Location", "Location")
@@ -557,17 +531,6 @@ namespace FinalProjectTest.Migrations
                     b.Navigation("Location");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FinalProjectTest.Models.UserInteraction", b =>
-                {
-                    b.HasOne("FinalProjectTest.Models.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Location");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

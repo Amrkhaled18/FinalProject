@@ -1,5 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace FinalProjectTest.Models
 {
     public class Location
@@ -19,6 +20,9 @@ namespace FinalProjectTest.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public string? GoogleMapsLink { get; set; }
+        [NotMapped]
+        public double? DistanceInKm { get; set; }
+
 
 
 

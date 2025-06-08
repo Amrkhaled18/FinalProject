@@ -1,21 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using FinalProjectTest.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using FinalProjectTest.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FinalProjectTest.Controllers
 {
     public class LocationsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public LocationsController(ApplicationDbContext context)
+        public LocationsController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
         {
             _context = context;
+            _userManager = userManager;
+
+        }
+
+        public async Task<List<Location>> GetRecommendedForUser(string userId)
+        {
+            var recentInteractions = await _context.UserInteractions
+                .Where(i => i.UserId == userId)
+                .OrderByDescending(i => i.Timestamp)
+                .Take(30)
+                .Include(i => i.Location)
+                .ToListAsync();
+
+            var favoriteCategories = recentInteractions
+                .GroupBy(i => i.Location.Category)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .ToList();
+
+            var recommended = await _context.Locations
+                .Where(l => favoriteCategories.Contains(l.Category))
+                .OrderByDescending(l => l.Attributes)
+                .Take(9)
+                .Include(l => l.Images)
+                .ToListAsync();
+
+            return recommended;
         }
 
         // GET: Locations
@@ -75,20 +104,31 @@ namespace FinalProjectTest.Controllers
 
 
         // GET: Locations/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int id)
         {
-            if (id == null)
-                return NotFound();
-
             var location = await _context.Locations
-                .Include(l => l.Images) // 🛠 INCLUDE images
+                .Include(l => l.Images)
                 .FirstOrDefaultAsync(m => m.LocationID == id);
 
             if (location == null)
                 return NotFound();
 
+            if (User.Identity.IsAuthenticated)
+            {
+                var userId = _userManager.GetUserId(User);
+                _context.UserInteractions.Add(new UserInteraction
+                {
+                    UserId = userId,
+                    LocationID = id,
+                    Type = "view"
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
             return View(location);
         }
+
 
 
         // GET: Locations/Create
@@ -196,6 +236,61 @@ namespace FinalProjectTest.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
+        private double ToRadians(double angle) => angle * Math.PI / 180;
+
+        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double R = 6371; // Radius of Earth in KM
+            double dLat = ToRadians(lat2 - lat1);
+            double dLon = ToRadians(lon2 - lon1);
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> NearMe(double? lat, double? lng, string sortBy = "distance")
+        {
+            if (lat == null || lng == null)
+                return View(new List<Location>()); // fallback view if no coords
+
+            var allLocations = await _context.Locations
+                .Include(l => l.Images)
+                .Where(l => l.Latitude.HasValue && l.Longitude.HasValue)
+                .ToListAsync();
+
+            foreach (var loc in allLocations)
+            {
+                loc.DistanceInKm = CalculateDistance(lat.Value, lng.Value, loc.Latitude.Value, loc.Longitude.Value);
+            }
+
+            // Apply sorting
+            var sorted = sortBy switch
+            {
+                "rating" => allLocations
+                    .OrderByDescending(l => double.TryParse(l.Attributes, out var rating) ? rating : 0)
+                    .ToList(),
+
+                "name" => allLocations
+                    .OrderBy(l => l.Name)
+                    .ToList(),
+
+                _ => allLocations
+                    .OrderBy(l => l.DistanceInKm)
+                    .ToList()
+            };
+
+            ViewBag.UserLat = lat;
+            ViewBag.UserLng = lng;
+            ViewBag.SortBy = sortBy;
+
+            return View(sorted);
+        }
+
+
 
         private bool LocationExists(int id)
         {

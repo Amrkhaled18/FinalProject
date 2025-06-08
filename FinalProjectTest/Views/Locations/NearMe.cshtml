@@ -15,28 +15,39 @@
             <input type="text" name="search" placeholder="Search in Cairo..." class="form-control me-2" />
             <button class="btn btn-outline-primary">Search</button>
         </form>
-        @if (User.Identity.IsAuthenticated)
-        {
-            <a href="/Preferences" class="btn btn-outline-secondary ms-3">
-                My Preferences
-            </a>
-        }
-         
     </div>
 </header>
 
-<section class="hero-section text-white text-center py-5" style="background: linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.5)), url('/data/pyramids.jpeg') center/cover;">
+<section class="hero-section text-white text-center py-5" style="background: linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.5)), url('/images/pyramids.jpeg') center/cover;">
     <div class="container">
         <span class="badge bg-secondary mb-2">AI-Powered</span>
         <h1 class="display-5 fw-bold">Discover Cairo with AI Assistance</h1>
         <p>Your personal guide to the best restaurants, hotels, cafes, and monuments in Cairo</p>
         <div class="d-flex justify-content-center gap-3 mt-3">
             <a href="/Locations" class="btn btn-primary">Explore All</a>
-            <a href="/Locations/NearMe" class="btn btn-outline-light">Places Near Me 📍</a>
+            <a href="#" class="btn btn-outline-light" onclick="getNearby()">Places Near Me 📍</a>
             <a href="/AI/Chat" class="btn btn-outline-light">Ask AI Assistant</a>
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        function getNearby() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    window.location.href = `/Locations/NearMe?lat=${lat}&lng=${lng}`;
+                }, function () {
+                    alert("Location access denied. Please enable location permissions.");
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+    </script>
+}
 
 <div class="container my-4">
     <ul class="nav nav-tabs justify-content-center">
@@ -64,6 +75,10 @@
     <div class="text-center mb-4">
         <h2 class="fw-bold">✨ Top-Rated Places in Cairo</h2>
         <p class="text-muted">Discover the highest-rated destinations handpicked for you</p>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0 fw-bold">Showing Places Near You</h4>
+        </div>
+
     </div>
 
     <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -94,6 +109,11 @@
                         <h5 class="card-title">@place.Name</h5>
                         <p class="card-text text-muted">@place.Address</p>
 
+                        @if (place.DistanceInKm.HasValue)
+                        {
+                            <p class="text-muted small">📍 ~@place.DistanceInKm.Value.ToString("0.0") km away Direct (straight-line) distance. Actual travel may vary.</p>
+                        }
+
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <a asp-controller="Locations" asp-action="Details" asp-route-id="@place.LocationID"
                                class="btn btn-outline-primary btn-sm w-100">
@@ -106,11 +126,8 @@
         }
     </div>
 </div>
-@{
-    var recommendedList = ViewBag.Recommended as List<Location>;
-}
 
-@if (recommendedList != null && recommendedList.Any())
+@if (ViewBag.Recommended is List<Location> recommended && recommended.Any())
 {
     <div class="text-center mt-5 mb-4">
         <h2 class="fw-bold">🎯 Recommended for You</h2>
@@ -118,8 +135,9 @@
     </div>
 
     <div class="row row-cols-1 row-cols-md-3 g-4">
-        @foreach (var rec in recommendedList)
+        @foreach (var rec in recommended)
         {
+
             var recImages = rec.Images?.Cast<LocationImage>().ToList();
             var recImageUrl = recImages?.FirstOrDefault()?.ImageURL ?? "https://source.unsplash.com/300x200/?cairo";
 
@@ -144,10 +162,6 @@
                     <div class="card-body d-flex flex-column justify-content-between">
                         <h5 class="card-title">@rec.Name</h5>
                         <p class="card-text text-muted">@rec.Address</p>
-
-                        <p class="text-success small">
-                            📌 Recommended because you’ve shown interest in @rec.Category
-                        </p>
 
                         <a asp-controller="Locations" asp-action="Details" asp-route-id="@rec.LocationID"
                            class="btn btn-outline-primary btn-sm mt-2 w-100">View Details</a>

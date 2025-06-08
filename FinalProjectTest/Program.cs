@@ -29,12 +29,31 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.WithOrigins("http://localhost:5173")
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                      });
+});
+
+
+
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages(); // Required for Identity pages
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // ?? Now build the app
 var app = builder.Build();
 
+app.UseCors(MyAllowSpecificOrigins);
 // ?? Seed data before starting the app
 using (var scope = app.Services.CreateScope())
 {
@@ -53,6 +72,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

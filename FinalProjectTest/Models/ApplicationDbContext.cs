@@ -15,16 +15,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChatbotInteraction> ChatbotInteractions { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<LocationImage> LocationImages { get; set; }
+    public DbSet<UserInteraction> UserInteractions { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // User-Preferences (1:1 or 1:0..1)
-        modelBuilder.Entity<ApplicationUser>()
-            .HasOne(u => u.Preferences)
-            .WithOne()
-            .HasForeignKey<ApplicationUser>(u => u.PreferencesID)
-            .OnDelete(DeleteBehavior.SetNull);
+        
 
         // User-Recommendation (1:Many)
         modelBuilder.Entity<Recommendation>()
@@ -69,6 +66,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(f => f.Location)
             .WithMany()
             .HasForeignKey(f => f.LocationID);
+
+        modelBuilder.Entity<Preference>()
+            .HasOne(p => p.User)
+            .WithMany()
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         base.OnModelCreating(modelBuilder);
     }

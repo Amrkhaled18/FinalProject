@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ExcelDataReader;
 using System.Data;
+using System.Text.RegularExpressions;
+
 
 namespace FinalProjectTest.Data
 {
@@ -23,58 +25,91 @@ namespace FinalProjectTest.Data
         }
 
         public static async Task ImportLocations(IServiceProvider serviceProvider)
+{
+    using var scope = serviceProvider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    if (context.Locations.Any(l => l.Category != "Hotel"))
+    {
+        Console.WriteLine("📂 Landmarks already seeded. Skipping.");
+        return;
+    }
+
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "Full_Data.xlsx");
+
+    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+    using var reader = ExcelReaderFactory.CreateReader(stream);
+
+    var config = new ExcelDataSetConfiguration
+    {
+        ConfigureDataTable = _ => new ExcelDataTableConfiguration { UseHeaderRow = true }
+    };
+
+    var dataSet = reader.AsDataSet(config);
+    var table = dataSet.Tables[0];
+    var records = new List<Location>();
+
+    foreach (DataRow row in table.Rows)
+    {
+        string category = row["Category"]?.ToString()?.Trim();
+
+        if (!string.IsNullOrWhiteSpace(category) && category.ToLower() != "hotel")
         {
-            using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            string name = row["Name"]?.ToString();
+            string address = row["Address"]?.ToString();
+            string shortDescription = row["ShortDescription"]?.ToString();
+            string fullDescription = row["FullDescription"]?.ToString();
+            string visitingHours = row["VisitingHours"]?.ToString();
+            string detailURL = row["DetailURL"]?.ToString();
+            string googleMapsLink = row["GoogleMapsLink"]?.ToString();
 
-            if (context.Locations.Any(l => l.Category != "Hotel"))
+            // Attempt to get coordinates
+            double latitude = 0, longitude = 0;
+            bool hasParsedCoords = false;
+
+            if (double.TryParse(row["Latitude"]?.ToString(), out double lat) &&
+                double.TryParse(row["Longitude"]?.ToString(), out double lng))
             {
-                Console.WriteLine("📂 Landmarks already seeded. Skipping.");
-                return;
+                latitude = lat;
+                longitude = lng;
+                hasParsedCoords = true;
             }
-
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "Full_Data.xlsx");
-
-            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            using var reader = ExcelReaderFactory.CreateReader(stream);
-
-            var config = new ExcelDataSetConfiguration
+            else if (!string.IsNullOrWhiteSpace(googleMapsLink))
             {
-                ConfigureDataTable = _ => new ExcelDataTableConfiguration { UseHeaderRow = true }
-            };
-
-            var dataSet = reader.AsDataSet(config);
-            var table = dataSet.Tables[0];
-            var records = new List<Location>();
-
-            foreach (DataRow row in table.Rows)
-            {
-                string category = row["Category"]?.ToString()?.Trim();
-
-                if (!string.IsNullOrWhiteSpace(category) && category.ToLower() != "hotel")
+                var match = Regex.Match(googleMapsLink, @"@(-?\d+\.\d+),(-?\d+\.\d+)");
+                if (match.Success && 
+                    double.TryParse(match.Groups[1].Value, out lat) &&
+                    double.TryParse(match.Groups[2].Value, out lng))
                 {
-                    records.Add(new Location
-                    {
-                        Name = row["Name"]?.ToString(),
-                        Address = row["Address"]?.ToString(),
-                        ShortDescription = row["ShortDescription"]?.ToString(),
-                        FullDescription = row["FullDescription"]?.ToString(),
-                        VisitingHours = row["VisitingHours"]?.ToString(),
-                        DetailURL = row["DetailURL"]?.ToString(),
-                        GoogleMapsLink = row["GoogleMapsLink"]?.ToString(),
-                        Category = category,
-                        ImageURL = "",
-                        Attributes = "",
-                        Latitude = 0,
-                        Longitude = 0
-                    });
+                    latitude = lat;
+                    longitude = lng;
+                    hasParsedCoords = true;
                 }
             }
 
-            await context.Locations.AddRangeAsync(records);
-            await context.SaveChangesAsync();
-            Console.WriteLine($"✅ {records.Count} landmarks seeded.");
+            records.Add(new Location
+            {
+                Name = name,
+                Address = address,
+                ShortDescription = shortDescription,
+                FullDescription = fullDescription,
+                VisitingHours = visitingHours,
+                DetailURL = detailURL,
+                GoogleMapsLink = googleMapsLink,
+                Category = category,
+                ImageURL = "",
+                Attributes = "",
+                Latitude = hasParsedCoords ? latitude : 0,
+                Longitude = hasParsedCoords ? longitude : 0
+            });
         }
+    }
+
+    await context.Locations.AddRangeAsync(records);
+    await context.SaveChangesAsync();
+    Console.WriteLine($"✅ {records.Count} landmarks seeded.");
+}
+
 
         public static async Task ImportHotels(IServiceProvider serviceProvider)
         {

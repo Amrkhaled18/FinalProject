@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FinalProjectTest.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250607215303_AddPreferenceUserLinkWithRestrict")]
+    partial class AddPreferenceUserLinkWithRestrict
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,6 +66,9 @@ namespace FinalProjectTest.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("PreferencesID")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -82,6 +88,10 @@ namespace FinalProjectTest.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("PreferencesID")
+                        .IsUnique()
+                        .HasFilter("[PreferencesID] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -469,6 +479,16 @@ namespace FinalProjectTest.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("FinalProjectTest.Models.ApplicationUser", b =>
+                {
+                    b.HasOne("FinalProjectTest.Models.Preference", "Preferences")
+                        .WithOne()
+                        .HasForeignKey("FinalProjectTest.Models.ApplicationUser", "PreferencesID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Preferences");
+                });
+
             modelBuilder.Entity("FinalProjectTest.Models.ChatbotInteraction", b =>
                 {
                     b.HasOne("FinalProjectTest.Models.ApplicationUser", "User")
@@ -534,7 +554,7 @@ namespace FinalProjectTest.Migrations
                     b.HasOne("FinalProjectTest.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
