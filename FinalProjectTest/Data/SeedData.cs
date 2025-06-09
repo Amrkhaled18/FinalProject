@@ -122,7 +122,7 @@ namespace FinalProjectTest.Data
                 return;
             }
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "Full_Data.xlsx");
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "Updated_Full_Data.xlsx");
 
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             using var reader = ExcelReaderFactory.CreateReader(stream);
@@ -153,13 +153,13 @@ namespace FinalProjectTest.Data
                         GoogleMapsLink = row["GoogleMapsLink"]?.ToString(),
                         Category = category,
                         ImageURL = "",
-                        Attributes = "",
+                        Attributes = row["Attributes"]?.ToString(),
                         Latitude = 0,
                         Longitude = 0
                     });
                 }
             }
-
+            q
             await context.Locations.AddRangeAsync(hotels);
             await context.SaveChangesAsync();
             Console.WriteLine($"🏨 {hotels.Count} hotels seeded.");
