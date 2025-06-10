@@ -166,6 +166,60 @@ namespace FinalProjectTest.Migrations
                     b.ToTable("Feedbacks");
                 });
 
+            modelBuilder.Entity("FinalProjectTest.Models.HotelDetails", b =>
+                {
+                    b.Property<int>("HotelDetailID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HotelDetailID"));
+
+                    b.Property<string>("Amenities")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BookingLink")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LocationID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OpenStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PriceLevel")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PricePerNight")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal?>("Rating")
+                        .HasColumnType("decimal(3,1)");
+
+                    b.Property<int?>("ReviewCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoomType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("HotelDetailID");
+
+                    b.HasIndex("LocationID")
+                        .IsUnique();
+
+                    b.ToTable("HotelDetails");
+                });
+
             modelBuilder.Entity("FinalProjectTest.Models.Location", b =>
                 {
                     b.Property<int>("LocationID")
@@ -242,37 +296,6 @@ namespace FinalProjectTest.Migrations
                     b.HasIndex("LocationID");
 
                     b.ToTable("LocationImages");
-                });
-
-            modelBuilder.Entity("FinalProjectTest.Models.Preference", b =>
-                {
-                    b.Property<int>("PreferenceID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PreferenceID"));
-
-                    b.Property<string>("AccessibilityRequirements")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DietaryRestrictions")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FavoriteCuisines")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("PreferenceID");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Preferences");
                 });
 
             modelBuilder.Entity("FinalProjectTest.Models.Recommendation", b =>
@@ -518,6 +541,17 @@ namespace FinalProjectTest.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FinalProjectTest.Models.HotelDetails", b =>
+                {
+                    b.HasOne("FinalProjectTest.Models.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+                });
+
             modelBuilder.Entity("FinalProjectTest.Models.LocationImage", b =>
                 {
                     b.HasOne("FinalProjectTest.Models.Location", "Location")
@@ -527,17 +561,6 @@ namespace FinalProjectTest.Migrations
                         .IsRequired();
 
                     b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("FinalProjectTest.Models.Preference", b =>
-                {
-                    b.HasOne("FinalProjectTest.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FinalProjectTest.Models.Recommendation", b =>

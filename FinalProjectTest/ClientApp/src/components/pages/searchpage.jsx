@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import placesData from '../../data/places.json';
+import { getPlaces } from '../../utils/api';
 import '../styles/searchpage.css';
 
 const SearchPage = () => {
@@ -26,60 +26,53 @@ const SearchPage = () => {
   }, [location.search]);
 
   // Perform search across all categories
-  const performSearch = (query) => {
-    setLoading(true);
-    
-    try {
-      // Combine all places from different categories with safeguards
-      const allPlaces = [
-        ...(placesData.restaurants || []).map(place => ({ ...place, category: 'restaurants' })),
-        ...(placesData.cafes || []).map(place => ({ ...place, category: 'cafes' })),
-        ...(placesData.hotels || []).map(place => ({ ...place, category: 'hotels' })),
-        ...(placesData.monuments || []).map(place => ({ ...place, category: 'monuments' }))
-      ];
-      
-      // Filter by search query (case insensitive with improved matching)
-      const results = allPlaces.filter(place => {
-        // Get searchable fields with fallbacks for undefined values
-        const name = place.name || place.hotel_name || '';
-        const address = place.address || '';
-        const description = place.description || '';
-        
-        const searchString = `${name} ${address} ${description}`.toLowerCase();
-        const queryLower = query.toLowerCase();
-        
-        // Check for matches in any part of the searchable text
-        return searchString.includes(queryLower);
-      });
-      
-      // Sort by relevance (exact matches first, then by rating)
-      results.sort((a, b) => {
-        const nameA = a.name || a.hotel_name || '';
-        const nameB = b.name || b.hotel_name || '';
-        const queryLower = query.toLowerCase();
-        
-        // Exact name matches come first
-        if (nameA.toLowerCase() === queryLower) return -1;
-        if (nameB.toLowerCase() === queryLower) return 1;
-        
-        // Starts with matches come next
-        const aStartsWith = nameA.toLowerCase().startsWith(queryLower);
-        const bStartsWith = nameB.toLowerCase().startsWith(queryLower);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
-        
-        // Then sort by rating (handling undefined ratings)
-        return (b.rating || 0) - (a.rating || 0);
-      });
-      
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Error during search:", error);
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const performSearch = async (query) => {
+        setLoading(true);
+        try {
+            const res = await getPlaces(); // fetch from API
+            if (!res.success) throw new Error(res.message);
+
+            const allPlaces = res.data.map(place => ({
+                ...place,
+                category: (place.category || '').toLowerCase()
+            }));
+
+            const results = allPlaces.filter(place => {
+                const name = place.name || place.hotel_name || '';
+                const address = place.address || '';
+                const description = place.description || '';
+
+                const searchString = `${name} ${address} ${description}`.toLowerCase();
+                const queryLower = query.toLowerCase();
+
+                return searchString.includes(queryLower);
+            });
+
+            results.sort((a, b) => {
+                const nameA = a.name || a.hotel_name || '';
+                const nameB = b.name || b.hotel_name || '';
+                const queryLower = query.toLowerCase();
+
+                if (nameA.toLowerCase() === queryLower) return -1;
+                if (nameB.toLowerCase() === queryLower) return 1;
+
+                const aStartsWith = nameA.toLowerCase().startsWith(queryLower);
+                const bStartsWith = nameB.toLowerCase().startsWith(queryLower);
+                if (aStartsWith && !bStartsWith) return -1;
+                if (!aStartsWith && bStartsWith) return 1;
+
+                return (b.rating || 0) - (a.rating || 0);
+            });
+
+            setSearchResults(results);
+        } catch (err) {
+            console.error('Error fetching search data:', err);
+            setSearchResults([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
   // Handle search form submission
   const handleSearchSubmit = (e) => {

@@ -8,7 +8,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     // Define DbSet properties for each entity
     public DbSet<ApplicationUser> Users { get; set; }
-    public DbSet<Preference> Preferences { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Recommendation> Recommendations { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
@@ -16,13 +15,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<LocationImage> LocationImages { get; set; }
     public DbSet<UserInteraction> UserInteractions { get; set; }
+    public DbSet<HotelDetails> HotelDetails { get; set; }
 
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        
 
+        modelBuilder.Entity<HotelDetails>()
+           .HasOne(h => h.Location)
+           .WithMany()
+           .HasForeignKey(h => h.LocationID)
+           .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<HotelDetails>()
+            .HasIndex(h => h.LocationID)
+            .IsUnique(); // One hotel detail per location
         // User-Recommendation (1:Many)
         modelBuilder.Entity<Recommendation>()
             .HasOne(r => r.User)
@@ -67,11 +75,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(f => f.LocationID);
 
-        modelBuilder.Entity<Preference>()
-            .HasOne(p => p.User)
-            .WithMany()
-            .HasForeignKey(p => p.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+      
 
         base.OnModelCreating(modelBuilder);
     }

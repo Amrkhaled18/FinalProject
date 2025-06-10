@@ -16,59 +16,167 @@ namespace FinalProjectTest.Controllers
             _context = context;
         }
 
-        // GET: api/locations
+        // GET: api/locations - Get all locations
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Location>>> GetLocations([FromQuery] string? category)
+        public async Task<ActionResult> GetLocations([FromQuery] string? category)
         {
-            var query = _context.Locations
-                .Include(l => l.Images)
-                .AsQueryable();
+            try
+            {
+                var query = _context.Locations
+                    .Include(l => l.Images)
+                    .AsQueryable();
 
-            if (!string.IsNullOrEmpty(category))
-                query = query.Where(l => l.Category == category);
+                if (!string.IsNullOrEmpty(category))
+                {
+                    // Handle specific category filtering
+                    if (category.ToLower() == "monuments")
+                    {
+                        // Group all monument-related categories
+                        var monumentCategories = new[] { "Church", "Mosque", "Historical", "Museum", "Palace", "Fortress", "Shrine", "Fountain", "Market", "School" };
+                        query = query.Where(l => monumentCategories.Contains(l.Category));
+                    }
+                    else
+                    {
+                        query = query.Where(l => l.Category == category);
+                    }
+                }
 
-            return Ok(await query.ToListAsync());
+                var locations = await query.ToListAsync();
+
+                return Ok(locations);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         // GET: api/locations/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Location>> GetLocation(int id)
+        public async Task<ActionResult> GetLocation(int id)
         {
-            var location = await _context.Locations
-                .Include(l => l.Images)
-                .FirstOrDefaultAsync(l => l.LocationID == id);
+            try
+            {
+                var location = await _context.Locations
+                    .Include(l => l.Images)
+                    .FirstOrDefaultAsync(l => l.LocationID == id);
 
-            if (location == null)
-                return NotFound();
+                if (location == null)
+                    return NotFound(new { success = false, message = "Location not found" });
 
-            return location;
+                return Ok(location);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
-        // ========== CATEGORY ENDPOINTS ==========
+        // ========== FRONTEND CATEGORY ENDPOINTS ==========
 
-        [HttpGet("churches")] public Task<IActionResult> GetChurches() => GetByCategory("Church");
-        [HttpGet("fortresses")] public Task<IActionResult> GetFortresses() => GetByCategory("Fortress");
-        [HttpGet("fountains")] public Task<IActionResult> GetFountains() => GetByCategory("Fountain");
-        [HttpGet("historical")] public Task<IActionResult> GetHistorical() => GetByCategory("Historical");
-        [HttpGet("hotels")] public Task<IActionResult> GetHotels() => GetByCategory("Hotel");
-        [HttpGet("markets")] public Task<IActionResult> GetMarkets() => GetByCategory("Market");
-        [HttpGet("mosques")] public Task<IActionResult> GetMosques() => GetByCategory("Mosque");
-        [HttpGet("museums")] public Task<IActionResult> GetMuseums() => GetByCategory("Museum");
-        [HttpGet("palaces")] public Task<IActionResult> GetPalaces() => GetByCategory("Palace");
-        [HttpGet("schools")] public Task<IActionResult> GetSchools() => GetByCategory("School");
-        [HttpGet("shrines")] public Task<IActionResult> GetShrines() => GetByCategory("Shrine");
-        [HttpGet("restaurants")] public Task<IActionResult> GetRestaurants() => GetByCategory("Restaurant");
-        [HttpGet("cafes")] public Task<IActionResult> GetCafes() => GetByCategory("Cafe");
+        [HttpGet("restaurants")]
+        public async Task<ActionResult> GetRestaurants()
+        {
+            try
+            {
+                var results = await _context.Locations
+                    .Include(l => l.Images)
+                    .Where(l => l.Category == "Restaurant")
+                    .ToListAsync();
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("cafes")]
+        public async Task<ActionResult> GetCafes()
+        {
+            try
+            {
+                var results = await _context.Locations
+                    .Include(l => l.Images)
+                    .Where(l => l.Category == "Cafe")
+                    .ToListAsync();
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("hotels")]
+        public async Task<ActionResult> GetHotels()
+        {
+            try
+            {
+                var results = await _context.Locations
+                    .Include(l => l.Images)
+                    .Where(l => l.Category == "Hotel")
+                    .ToListAsync();
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("monuments")]
+        public async Task<ActionResult> GetMonuments()
+        {
+            try
+            {
+                var monumentCategories = new[] { "Church", "Mosque", "Historical", "Museum", "Palace", "Fortress", "Shrine", "Fountain", "Market", "School" };
+
+                var results = await _context.Locations
+                    .Include(l => l.Images)
+                    .Where(l => monumentCategories.Contains(l.Category))
+                    .ToListAsync();
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ========== INDIVIDUAL BACKEND CATEGORY ENDPOINTS (for admin/detailed views) ==========
+
+        [HttpGet("churches")] public async Task<ActionResult> GetChurches() => await GetByCategory("Church");
+        [HttpGet("fortresses")] public async Task<ActionResult> GetFortresses() => await GetByCategory("Fortress");
+        [HttpGet("fountains")] public async Task<ActionResult> GetFountains() => await GetByCategory("Fountain");
+        [HttpGet("historical")] public async Task<ActionResult> GetHistorical() => await GetByCategory("Historical");
+        [HttpGet("markets")] public async Task<ActionResult> GetMarkets() => await GetByCategory("Market");
+        [HttpGet("mosques")] public async Task<ActionResult> GetMosques() => await GetByCategory("Mosque");
+        [HttpGet("museums")] public async Task<ActionResult> GetMuseums() => await GetByCategory("Museum");
+        [HttpGet("palaces")] public async Task<ActionResult> GetPalaces() => await GetByCategory("Palace");
+        [HttpGet("schools")] public async Task<ActionResult> GetSchools() => await GetByCategory("School");
+        [HttpGet("shrines")] public async Task<ActionResult> GetShrines() => await GetByCategory("Shrine");
 
         // ========== PRIVATE HELPER ==========
-        private async Task<IActionResult> GetByCategory(string category)
+        private async Task<ActionResult> GetByCategory(string category)
         {
-            var results = await _context.Locations
-                .Include(l => l.Images)
-                .Where(l => l.Category == category)
-                .ToListAsync();
+            try
+            {
+                var results = await _context.Locations
+                    .Include(l => l.Images)
+                    .Where(l => l.Category == category)
+                    .ToListAsync();
 
-            return Ok(results);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
     }
 }

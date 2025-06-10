@@ -9,10 +9,6 @@ namespace FinalProjectTest.Models
         public string FavoriteCuisines { get; set; }
         public string AccessibilityRequirements { get; set; }
 
-        // Add User linkage
-        public string UserId { get; set; }
-
-        [ForeignKey("UserId")]
-        public ApplicationUser User { get; set; }
+        
     }
 }

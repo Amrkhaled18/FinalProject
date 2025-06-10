@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import placesData from '../../data/places.json';
+import { getPlacesByCategory } from '../../utils/api';
 import '../styles/Chatbot.css';
 
 const ChatbotComponent = () => {
@@ -958,7 +958,7 @@ const ChatbotComponent = () => {
           sender: 'bot',
           text: `I couldn't find places matching "${input}". Would you like to browse by category instead?`,
           options: [
-            { text: '🏨 Hotels', action: () => { setSelectedCategory('hotels'); setShowFilters(true); } },
+            { text: '🏨 Hotels', action: () => { setSelectedCategory('Hotel'); setShowFilters(true); } },
             { text: '🍽️ Restaurants', action: () => { setSelectedCategory('restaurants'); setShowFilters(true); } },
             { text: '☕ Cafes', action: () => { setSelectedCategory('cafes'); setShowFilters(true); } },
             { text: '🏛️ Monuments', action: () => { setSelectedCategory('monuments'); setShowFilters(true); } }
