@@ -1,7 +1,8 @@
 using FinalProjectTest.Data;
 using FinalProjectTest.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,7 @@ builder.Services.AddCors(options =>
 
 
 
+builder.Services.AddControllers();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages(); // Required for Identity pages
@@ -52,6 +54,8 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // ?? Now build the app
 var app = builder.Build();
+app.UseCors(MyAllowSpecificOrigins);
+
 
 app.UseCors(MyAllowSpecificOrigins);
 // ?? Seed data before starting the app
@@ -80,5 +84,8 @@ app.MapRazorPages(); // Identity UI
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapControllers();
+
+
 
 app.Run();

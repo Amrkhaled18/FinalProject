@@ -159,7 +159,7 @@ namespace FinalProjectTest.Data
                     });
                 }
             }
-            q
+
             await context.Locations.AddRangeAsync(hotels);
             await context.SaveChangesAsync();
             Console.WriteLine($"🏨 {hotels.Count} hotels seeded.");
